@@ -1,0 +1,36 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /trips/{tripCode} {
+      allow read: if true;
+      allow create, update: if isValidTrip(request.resource.data);
+      allow delete: if false;
+
+      match /expenses/{expenseId} {
+        allow read: if true;
+        allow create, update: if isValidExpense(request.resource.data);
+        allow delete: if true;
+      }
+    }
+
+    function isValidTrip(data) {
+      return data.keys().hasAll(['name', 'baseCurrency', 'exchangeRate', 'editPassword', 'members', 'createdAt'])
+        && data.name is string
+        && data.baseCurrency is string
+        && data.exchangeRate is number
+        && data.editPassword is string
+        && data.members is list;
+    }
+
+    function isValidExpense(data) {
+      return data.keys().hasAll(['payer', 'amount', 'currency', 'date', 'splitType', 'splits'])
+        && data.payer is string
+        && data.amount is number
+        && data.currency is string
+        && data.splitType in ['equal', 'custom']
+        && data.splits is list;
+    }
+  }
+}
