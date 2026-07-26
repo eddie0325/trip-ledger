@@ -84,9 +84,11 @@ export default function ExpenseForm({ trip, initialValue, onSubmit, onCancel }: 
         description: description.trim(),
         splitType,
         splits,
-        receiptUrl: initialValue?.receiptUrl,
-        mapUrl: initialValue?.mapUrl,
+        ...(initialValue?.receiptUrl ? { receiptUrl: initialValue.receiptUrl } : {}),
+        ...(initialValue?.mapUrl ? { mapUrl: initialValue.mapUrl } : {}),
       });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "儲存失敗，請再試一次");
     } finally {
       setSubmitting(false);
     }
