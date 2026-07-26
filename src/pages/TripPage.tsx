@@ -206,6 +206,7 @@ export default function TripPage() {
       <div className="card">
         <h2>花費記錄</h2>
         <ExpenseList
+          trip={trip}
           expenses={expenses}
           canEdit={unlocked}
           onEdit={(expense) => {

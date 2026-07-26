@@ -177,6 +177,31 @@ textarea {
   border-bottom: none;
 }
 
+.expense-day-group {
+  margin-bottom: 8px;
+}
+
+.expense-day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 14px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.expense-day-group:first-child .expense-day-header {
+  margin-top: 0;
+}
+
+.expense-day-header h3 {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 500;
+}
+
 .expense-top {
   display: flex;
   justify-content: space-between;

@@ -14,7 +14,7 @@ export function computeEqualSplits(amount: number, participants: string[]): Expe
   }));
 }
 
-function toBaseCurrency(amount: number, currency: string, trip: Trip): number {
+export function toBaseCurrency(amount: number, currency: string, trip: Trip): number {
   if (currency === trip.baseCurrency) return amount;
   if (trip.exchangeRate == null) {
     throw new Error("尚未設定匯率，無法換算外幣花費。");
