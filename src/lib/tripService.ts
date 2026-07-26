@@ -20,7 +20,7 @@ export interface CreateTripInput {
   name: string;
   baseCurrency: string;
   foreignCurrency: string;
-  exchangeRate: number;
+  exchangeRate: number | null;
   editPassword: string;
   members: string[];
 }
@@ -42,6 +42,10 @@ export async function createTrip(input: CreateTripInput): Promise<string> {
 export async function getTrip(code: string): Promise<Trip | null> {
   const snap = await getDoc(doc(db, "trips", code));
   return snap.exists() ? (snap.data() as Trip) : null;
+}
+
+export async function updateExchangeRate(code: string, exchangeRate: number): Promise<void> {
+  await updateDoc(doc(db, "trips", code), { exchangeRate });
 }
 
 export async function listExpenses(code: string): Promise<Expense[]> {

@@ -19,7 +19,7 @@ service cloud.firestore {
       return data.keys().hasAll(['name', 'baseCurrency', 'exchangeRate', 'editPassword', 'members', 'createdAt'])
         && data.name is string
         && data.baseCurrency is string
-        && data.exchangeRate is number
+        && (data.exchangeRate is number || data.exchangeRate == null)
         && data.editPassword is string
         && data.members is list;
     }

@@ -15,7 +15,25 @@ export function computeEqualSplits(amount: number, participants: string[]): Expe
 }
 
 function toBaseCurrency(amount: number, currency: string, trip: Trip): number {
-  return currency === trip.baseCurrency ? amount : amount * trip.exchangeRate;
+  if (currency === trip.baseCurrency) return amount;
+  if (trip.exchangeRate == null) {
+    throw new Error("尚未設定匯率，無法換算外幣花費。");
+  }
+  return amount * trip.exchangeRate;
+}
+
+/** True when settlement can't be computed yet because a foreign-currency expense exists but no rate is set. */
+export function needsExchangeRate(trip: Trip, expenses: Expense[]): boolean {
+  return trip.exchangeRate == null && expenses.some((e) => e.currency !== trip.baseCurrency);
+}
+
+/** Converts an amount already in the trip's base currency into the requested display currency. */
+export function convertFromBase(amountInBase: number, displayCurrency: string, trip: Trip): number {
+  if (displayCurrency === trip.baseCurrency) return amountInBase;
+  if (trip.exchangeRate == null) {
+    throw new Error("尚未設定匯率，無法換算外幣顯示。");
+  }
+  return amountInBase / trip.exchangeRate;
 }
 
 /** Net balance per member, in the trip's base currency. Positive = should receive money, negative = owes money. */

@@ -4,7 +4,14 @@ import ExpenseForm from "../components/ExpenseForm";
 import ExpenseList from "../components/ExpenseList";
 import SettlementView from "../components/SettlementView";
 import { checkEditPassword, isUnlocked, unlockTrip } from "../lib/localAuth";
-import { addExpense, deleteExpense, getTrip, listExpenses, updateExpense } from "../lib/tripService";
+import {
+  addExpense,
+  deleteExpense,
+  getTrip,
+  listExpenses,
+  updateExchangeRate,
+  updateExpense,
+} from "../lib/tripService";
 import type { Expense, Trip } from "../lib/types";
 
 export default function TripPage() {
@@ -22,6 +29,11 @@ export default function TripPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+
+  const [editingRate, setEditingRate] = useState(false);
+  const [rateInput, setRateInput] = useState("");
+  const [rateError, setRateError] = useState("");
+  const [savingRate, setSavingRate] = useState(false);
 
   const loadData = useCallback(async () => {
     const t = await getTrip(code);
@@ -78,6 +90,31 @@ export default function TripPage() {
     await loadData();
   }
 
+  function startEditRate() {
+    setRateInput(trip?.exchangeRate != null ? String(trip.exchangeRate) : "");
+    setRateError("");
+    setEditingRate(true);
+  }
+
+  async function handleSaveRate(e: React.FormEvent) {
+    e.preventDefault();
+    const rate = Number(rateInput);
+    if (!rateInput || !(rate > 0)) {
+      setRateError("請輸入大於 0 的數字");
+      return;
+    }
+    setSavingRate(true);
+    try {
+      await updateExchangeRate(code, rate);
+      setEditingRate(false);
+      await loadData();
+    } catch (err) {
+      setRateError(err instanceof Error ? err.message : "更新失敗，請再試一次");
+    } finally {
+      setSavingRate(false);
+    }
+  }
+
   async function handleCopyLink() {
     await navigator.clipboard.writeText(window.location.href);
     setLinkCopied(true);
@@ -110,6 +147,41 @@ export default function TripPage() {
             {refreshing ? "更新中..." : "重新整理"}
           </button>
         </div>
+      </div>
+
+      <div className="card">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+          <span>
+            匯率：
+            {trip.exchangeRate != null
+              ? `1 ${trip.foreignCurrency} = ${trip.exchangeRate} ${trip.baseCurrency}`
+              : "尚未設定"}
+          </span>
+          {unlocked && !editingRate && (
+            <button type="button" className="btn" onClick={startEditRate}>
+              {trip.exchangeRate != null ? "調整匯率" : "設定匯率"}
+            </button>
+          )}
+        </div>
+        {editingRate && (
+          <form onSubmit={handleSaveRate} className="field-row" style={{ marginTop: 8, alignItems: "flex-start" }}>
+            <input
+              type="number"
+              step="0.0001"
+              min="0"
+              value={rateInput}
+              onChange={(e) => setRateInput(e.target.value)}
+              placeholder={`1 ${trip.foreignCurrency} = ? ${trip.baseCurrency}`}
+            />
+            <button type="submit" className="btn btn-primary" disabled={savingRate}>
+              {savingRate ? "儲存中..." : "儲存"}
+            </button>
+            <button type="button" className="btn" onClick={() => setEditingRate(false)}>
+              取消
+            </button>
+          </form>
+        )}
+        {rateError && <p className="error">{rateError}</p>}
       </div>
 
       {!unlocked && (

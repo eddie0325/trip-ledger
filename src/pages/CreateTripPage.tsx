@@ -32,13 +32,13 @@ export default function CreateTripPage() {
     const trimmedName = name.trim();
     const trimmedMembers = members.map((m) => m.trim()).filter(Boolean);
     const uniqueMembers = new Set(trimmedMembers);
-    const rate = Number(exchangeRate);
+    const rate = exchangeRate ? Number(exchangeRate) : null;
 
     if (!trimmedName) return setError("請輸入旅程名稱");
     if (!baseCurrency.trim() || !foreignCurrency.trim()) return setError("請輸入幣別代碼");
     if (baseCurrency.trim().toUpperCase() === foreignCurrency.trim().toUpperCase())
       return setError("兩種幣別不能相同");
-    if (!exchangeRate || !(rate > 0)) return setError("請輸入有效的匯率");
+    if (exchangeRate && !(rate! > 0)) return setError("匯率請輸入大於 0 的數字");
     if (!editPassword.trim()) return setError("請設定編輯密碼");
     if (trimmedMembers.length < 2) return setError("請至少輸入 2 位成員");
     if (uniqueMembers.size !== trimmedMembers.length) return setError("成員名稱不能重複");
@@ -105,7 +105,7 @@ export default function CreateTripPage() {
 
           <div className="field">
             <label htmlFor="exchange-rate">
-              匯率：1 {foreignCurrency || "外幣"} = ? {baseCurrency || "主要幣別"}
+              匯率：1 {foreignCurrency || "外幣"} = ? {baseCurrency || "主要幣別"}（選填，之後隨時可以調整）
             </label>
             <input
               id="exchange-rate"
@@ -114,7 +114,7 @@ export default function CreateTripPage() {
               min="0"
               value={exchangeRate}
               onChange={(e) => setExchangeRate(e.target.value)}
-              placeholder="例如：0.22"
+              placeholder="不確定可以先留空"
             />
           </div>
 

@@ -23,8 +23,8 @@ export interface Trip {
   name: string;
   baseCurrency: string;
   foreignCurrency: string;
-  /** 1 unit of foreignCurrency = exchangeRate units of baseCurrency */
-  exchangeRate: number;
+  /** 1 unit of foreignCurrency = exchangeRate units of baseCurrency. Null until someone sets it. */
+  exchangeRate: number | null;
   editPassword: string;
   members: string[];
   createdAt: number;

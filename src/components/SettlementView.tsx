@@ -1,4 +1,5 @@
-import { computeBalances, simplifyDebts } from "../lib/settlement";
+import { useState } from "react";
+import { computeBalances, convertFromBase, needsExchangeRate, simplifyDebts } from "../lib/settlement";
 import type { Expense, Trip } from "../lib/types";
 
 interface SettlementViewProps {
@@ -7,14 +8,59 @@ interface SettlementViewProps {
 }
 
 export default function SettlementView({ trip, expenses }: SettlementViewProps) {
+  const [displayCurrency, setDisplayCurrency] = useState(trip.baseCurrency);
+
+  if (needsExchangeRate(trip, expenses)) {
+    return (
+      <div>
+        <h3>結算</h3>
+        <p className="muted">
+          有花費使用 {trip.foreignCurrency}，請先在上方設定匯率才能計算結算結果。
+        </p>
+      </div>
+    );
+  }
+
   const balances = computeBalances(trip, expenses);
   const transactions = simplifyDebts(balances);
+  const canToggleCurrency = trip.exchangeRate != null;
 
   return (
     <div>
-      <h3>每人淨額（{trip.baseCurrency}）</h3>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h3 style={{ margin: 0 }}>每人淨額（{displayCurrency}）</h3>
+        {canToggleCurrency && (
+          <div className="field-row" style={{ flex: "0 0 auto" }}>
+            <button
+              type="button"
+              className="btn"
+              style={
+                displayCurrency === trip.baseCurrency
+                  ? { borderColor: "var(--accent)", color: "var(--accent)" }
+                  : undefined
+              }
+              onClick={() => setDisplayCurrency(trip.baseCurrency)}
+            >
+              {trip.baseCurrency}
+            </button>
+            <button
+              type="button"
+              className="btn"
+              style={
+                displayCurrency === trip.foreignCurrency
+                  ? { borderColor: "var(--accent)", color: "var(--accent)" }
+                  : undefined
+              }
+              onClick={() => setDisplayCurrency(trip.foreignCurrency)}
+            >
+              {trip.foreignCurrency}
+            </button>
+          </div>
+        )}
+      </div>
+
       {trip.members.map((member) => {
-        const amount = balances[member] ?? 0;
+        const amount = convertFromBase(balances[member] ?? 0, displayCurrency, trip);
         const isPositive = amount > 0.01;
         const isNegative = amount < -0.01;
         return (
@@ -38,7 +84,7 @@ export default function SettlementView({ trip, expenses }: SettlementViewProps) 
               {t.from} → {t.to}
             </span>
             <strong>
-              {t.amount.toFixed(2)} {trip.baseCurrency}
+              {convertFromBase(t.amount, displayCurrency, trip).toFixed(2)} {displayCurrency}
             </strong>
           </div>
         ))
