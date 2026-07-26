@@ -310,6 +310,21 @@ textarea {
   border-bottom-color: var(--accent);
 }
 
+.receipt-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.receipt-preview img {
+  max-width: 120px;
+  max-height: 120px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  display: block;
+}
+
 .checkbox-row {
   display: flex;
   align-items: center;

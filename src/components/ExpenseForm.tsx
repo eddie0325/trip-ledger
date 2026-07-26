@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { uploadReceipt, validateReceiptFile } from "../lib/receiptStorage";
 import { computeEqualSplits } from "../lib/settlement";
 import type { Expense, SplitType, Trip } from "../lib/types";
 
@@ -28,6 +29,11 @@ export default function ExpenseForm({ trip, initialValue, onSubmit, onCancel }: 
     for (const split of initialValue?.splits ?? []) initial[split.member] = String(split.amount);
     return initial;
   });
+  const [receiptUrl, setReceiptUrl] = useState(initialValue?.receiptUrl);
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState<string | undefined>(initialValue?.receiptUrl);
+  const [uploading, setUploading] = useState(false);
+
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -40,6 +46,27 @@ export default function ExpenseForm({ trip, initialValue, onSubmit, onCancel }: 
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [splitType]);
+
+  function handleReceiptChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    const validationError = validateReceiptFile(file);
+    if (validationError) return setError(validationError);
+
+    setError("");
+    if (receiptPreview) URL.revokeObjectURL(receiptPreview);
+    setReceiptFile(file);
+    setReceiptPreview(URL.createObjectURL(file));
+  }
+
+  function handleRemoveReceipt() {
+    if (receiptPreview) URL.revokeObjectURL(receiptPreview);
+    setReceiptFile(null);
+    setReceiptPreview(undefined);
+    setReceiptUrl(undefined);
+  }
 
   function toggleParticipant(member: string) {
     setParticipants((prev) => {
@@ -76,6 +103,16 @@ export default function ExpenseForm({ trip, initialValue, onSubmit, onCancel }: 
 
     setSubmitting(true);
     try {
+      let finalReceiptUrl = receiptUrl;
+      if (receiptFile) {
+        setUploading(true);
+        try {
+          finalReceiptUrl = await uploadReceipt(trip.code, receiptFile);
+        } finally {
+          setUploading(false);
+        }
+      }
+
       await onSubmit({
         payer,
         amount: amountNum,
@@ -84,7 +121,7 @@ export default function ExpenseForm({ trip, initialValue, onSubmit, onCancel }: 
         description: description.trim(),
         splitType,
         splits,
-        ...(initialValue?.receiptUrl ? { receiptUrl: initialValue.receiptUrl } : {}),
+        ...(finalReceiptUrl ? { receiptUrl: finalReceiptUrl } : {}),
         ...(initialValue?.mapUrl ? { mapUrl: initialValue.mapUrl } : {}),
       });
     } catch (err) {
@@ -147,6 +184,21 @@ export default function ExpenseForm({ trip, initialValue, onSubmit, onCancel }: 
       </div>
 
       <div className="field">
+        <label htmlFor="expense-receipt">收據照片（選填）</label>
+        {receiptPreview && (
+          <div className="receipt-preview">
+            <a href={receiptPreview} target="_blank" rel="noreferrer">
+              <img src={receiptPreview} alt="收據預覽" />
+            </a>
+            <button type="button" className="btn" onClick={handleRemoveReceipt}>
+              移除
+            </button>
+          </div>
+        )}
+        <input id="expense-receipt" type="file" accept="image/*" onChange={handleReceiptChange} />
+      </div>
+
+      <div className="field">
         <label>分攤方式</label>
         <div className="field-row">
           <button
@@ -206,7 +258,7 @@ export default function ExpenseForm({ trip, initialValue, onSubmit, onCancel }: 
 
       <div className="field-row">
         <button type="submit" className="btn btn-primary" disabled={submitting}>
-          {submitting ? "儲存中..." : initialValue ? "儲存修改" : "新增花費"}
+          {uploading ? "上傳收據中..." : submitting ? "儲存中..." : initialValue ? "儲存修改" : "新增花費"}
         </button>
         {onCancel && (
           <button type="button" className="btn" onClick={onCancel}>
