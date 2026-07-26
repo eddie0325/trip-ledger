@@ -170,7 +170,7 @@ textarea {
 
 .expense-item {
   border-bottom: 1px solid var(--border);
-  padding: 10px 0;
+  padding: 6px 0;
 }
 
 .expense-item:last-child {
@@ -202,11 +202,35 @@ textarea {
   font-weight: 500;
 }
 
-.expense-top {
+.expense-summary {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   gap: 8px;
+  width: 100%;
+  padding: 4px 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.expense-summary-main {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.expense-caret {
+  color: var(--text);
+  flex: 0 0 auto;
+}
+
+.expense-details {
+  padding: 6px 0 4px 20px;
 }
 
 .expense-amount {

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { toBaseCurrency } from "../lib/settlement";
 import type { Expense, Trip } from "../lib/types";
 
@@ -33,8 +34,20 @@ function computeDaySubtotal(dayExpenses: Expense[], trip: Trip): number | null {
 }
 
 export default function ExpenseList({ trip, expenses, canEdit, onEdit, onDelete }: ExpenseListProps) {
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
   if (expenses.length === 0) {
     return <p className="muted">還沒有任何花費記錄。</p>;
+  }
+
+  function toggleExpanded(id: string | undefined) {
+    if (!id) return;
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   }
 
   return (
@@ -52,51 +65,62 @@ export default function ExpenseList({ trip, expenses, canEdit, onEdit, onDelete 
               )}
             </div>
 
-            {dayExpenses.map((expense) => (
-              <div className="expense-item" key={expense.id}>
-                <div className="expense-top">
-                  <div>
-                    <strong>{expense.description}</strong>
-                    <div className="expense-meta">
-                      {expense.payer} 先付
-                      {expense.mapUrl && (
-                        <>
-                          {" · "}
-                          <a href={expense.mapUrl} target="_blank" rel="noreferrer">
-                            地圖
-                          </a>
-                        </>
+            {dayExpenses.map((expense) => {
+              const isExpanded = !!expense.id && expandedIds.has(expense.id);
+              return (
+                <div className="expense-item" key={expense.id}>
+                  <button
+                    type="button"
+                    className="expense-summary"
+                    onClick={() => toggleExpanded(expense.id)}
+                    aria-expanded={isExpanded}
+                  >
+                    <span className="expense-summary-main">
+                      <span className="expense-caret">{isExpanded ? "▾" : "▸"}</span>
+                      <strong>{expense.description}</strong>
+                      <span className="expense-meta">{expense.payer} 先付</span>
+                    </span>
+                    <span className="expense-amount">
+                      {expense.amount.toFixed(2)} {expense.currency}
+                    </span>
+                  </button>
+
+                  {isExpanded && (
+                    <div className="expense-details">
+                      <div className="expense-meta">
+                        分攤：
+                        {expense.splits.map((s) => `${s.member} ${s.amount.toFixed(2)}`).join("、")}
+                      </div>
+                      {(expense.mapUrl || expense.receiptUrl) && (
+                        <div className="expense-meta">
+                          {expense.mapUrl && (
+                            <a href={expense.mapUrl} target="_blank" rel="noreferrer">
+                              地圖
+                            </a>
+                          )}
+                          {expense.mapUrl && expense.receiptUrl && " · "}
+                          {expense.receiptUrl && (
+                            <a href={expense.receiptUrl} target="_blank" rel="noreferrer">
+                              收據
+                            </a>
+                          )}
+                        </div>
                       )}
-                      {expense.receiptUrl && (
-                        <>
-                          {" · "}
-                          <a href={expense.receiptUrl} target="_blank" rel="noreferrer">
-                            收據
-                          </a>
-                        </>
+                      {canEdit && (
+                        <div className="expense-actions">
+                          <button type="button" className="btn" onClick={() => onEdit(expense)}>
+                            編輯
+                          </button>
+                          <button type="button" className="btn btn-danger" onClick={() => onDelete(expense)}>
+                            刪除
+                          </button>
+                        </div>
                       )}
                     </div>
-                  </div>
-                  <div className="expense-amount">
-                    {expense.amount.toFixed(2)} {expense.currency}
-                  </div>
+                  )}
                 </div>
-                <div className="expense-meta">
-                  分攤：
-                  {expense.splits.map((s) => `${s.member} ${s.amount.toFixed(2)}`).join("、")}
-                </div>
-                {canEdit && (
-                  <div className="expense-actions">
-                    <button type="button" className="btn" onClick={() => onEdit(expense)}>
-                      編輯
-                    </button>
-                    <button type="button" className="btn btn-danger" onClick={() => onDelete(expense)}>
-                      刪除
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         );
       })}
