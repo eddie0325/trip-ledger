@@ -35,6 +35,8 @@ export default function TripPage() {
   const [rateError, setRateError] = useState("");
   const [savingRate, setSavingRate] = useState(false);
 
+  const [activeTab, setActiveTab] = useState<"expenses" | "settlement">("expenses");
+
   const loadData = useCallback(async () => {
     const t = await getTrip(code);
     if (!t) {
@@ -203,51 +205,71 @@ export default function TripPage() {
         </div>
       )}
 
-      <div className="card">
-        <h2>花費記錄</h2>
-        <ExpenseList
-          trip={trip}
-          expenses={expenses}
-          canEdit={unlocked}
-          onEdit={(expense) => {
-            setEditingExpense(expense);
-            setShowForm(true);
-          }}
-          onDelete={handleDelete}
-        />
+      <div className="tab-bar">
+        <button
+          type="button"
+          className={`tab-btn${activeTab === "expenses" ? " active" : ""}`}
+          onClick={() => setActiveTab("expenses")}
+        >
+          花費記錄
+        </button>
+        <button
+          type="button"
+          className={`tab-btn${activeTab === "settlement" ? " active" : ""}`}
+          onClick={() => setActiveTab("settlement")}
+        >
+          結算
+        </button>
+      </div>
 
-        {unlocked && !showForm && (
-          <button
-            type="button"
-            className="btn btn-primary"
-            style={{ marginTop: 12 }}
-            onClick={() => {
-              setEditingExpense(null);
+      {activeTab === "expenses" && (
+        <div className="card">
+          <ExpenseList
+            trip={trip}
+            expenses={expenses}
+            canEdit={unlocked}
+            onEdit={(expense) => {
+              setEditingExpense(expense);
               setShowForm(true);
             }}
-          >
-            + 新增花費
-          </button>
-        )}
+            onDelete={handleDelete}
+          />
 
-        {unlocked && showForm && (
-          <div style={{ marginTop: 12 }}>
-            <ExpenseForm
-              trip={trip}
-              initialValue={editingExpense ?? undefined}
-              onSubmit={handleFormSubmit}
-              onCancel={() => {
-                setShowForm(false);
+          {unlocked && !showForm && (
+            <button
+              type="button"
+              className="btn btn-primary"
+              style={{ marginTop: 12 }}
+              onClick={() => {
                 setEditingExpense(null);
+                setShowForm(true);
               }}
-            />
-          </div>
-        )}
-      </div>
+            >
+              + 新增花費
+            </button>
+          )}
 
-      <div className="card">
-        <SettlementView trip={trip} expenses={expenses} />
-      </div>
+          {unlocked && showForm && (
+            <div style={{ marginTop: 12 }}>
+              <ExpenseForm
+                trip={trip}
+                initialValue={editingExpense ?? undefined}
+                onSubmit={handleFormSubmit}
+                onCancel={() => {
+                  setShowForm(false);
+                  setEditingExpense(null);
+                }}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === "settlement" && (
+        <div className="card">
+          <SettlementView trip={trip} expenses={expenses} />
+        </div>
+      )}
     </div>
   );
 }
