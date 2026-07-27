@@ -223,7 +223,7 @@ export default function TripPage() {
       </div>
 
       {activeTab === "expenses" && (
-        <div className="card">
+        <div>
           <ExpenseList
             trip={trip}
             expenses={expenses}
@@ -250,7 +250,7 @@ export default function TripPage() {
           )}
 
           {unlocked && showForm && (
-            <div style={{ marginTop: 12 }}>
+            <div className="card" style={{ marginTop: 12 }}>
               <ExpenseForm
                 trip={trip}
                 initialValue={editingExpense ?? undefined}

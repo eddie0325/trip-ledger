@@ -178,7 +178,15 @@ textarea {
 }
 
 .expense-day-group {
-  margin-bottom: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.expense-day-group:last-child {
+  margin-bottom: 0;
 }
 
 .expense-day-header {
@@ -186,20 +194,16 @@ textarea {
   justify-content: space-between;
   align-items: baseline;
   gap: 8px;
-  margin-top: 14px;
-  padding-bottom: 4px;
+  padding-bottom: 8px;
+  margin-bottom: 4px;
   border-bottom: 1px solid var(--border);
-}
-
-.expense-day-group:first-child .expense-day-header {
-  margin-top: 0;
 }
 
 .expense-day-header h3 {
   margin: 0;
-  font-size: 14px;
-  color: var(--text);
-  font-weight: 500;
+  font-size: 17px;
+  color: var(--text-h);
+  font-weight: 700;
 }
 
 .expense-summary {
