@@ -2,11 +2,10 @@ import { useState } from "react";
 import { closestCenter, DndContext, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { toBaseCurrency } from "../lib/settlement";
-import type { Expense, Trip } from "../lib/types";
+import { formatDateHeader, groupByDate } from "../lib/dateGroup";
+import type { Expense } from "../lib/types";
 
 interface ExpenseListProps {
-  trip: Trip;
   expenses: Expense[];
   canEdit: boolean;
   editingExpenseId?: string;
@@ -14,32 +13,6 @@ interface ExpenseListProps {
   onDelete: (expense: Expense) => void;
   onReorder: (date: string, orderedIds: string[]) => void;
   renderEditForm: (expense: Expense) => React.ReactNode;
-}
-
-function groupByDate(expenses: Expense[]): [string, Expense[]][] {
-  const groups = new Map<string, Expense[]>();
-  for (const expense of expenses) {
-    const list = groups.get(expense.date) ?? [];
-    list.push(expense);
-    groups.set(expense.date, list);
-  }
-  for (const list of groups.values()) {
-    list.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-  }
-  return Array.from(groups.entries());
-}
-
-function formatDateHeader(dateStr: string): string {
-  const weekday = new Date(`${dateStr}T00:00:00`).toLocaleDateString("zh-TW", { weekday: "short" });
-  return `${dateStr}（${weekday}）`;
-}
-
-function computeDaySubtotal(dayExpenses: Expense[], trip: Trip): number | null {
-  try {
-    return dayExpenses.reduce((sum, e) => sum + toBaseCurrency(e.amount, e.currency, trip), 0);
-  } catch {
-    return null;
-  }
 }
 
 interface ExpenseRowProps {
@@ -126,7 +99,6 @@ function ExpenseRow({ expense, canEdit, isExpanded, editForm, onToggle, onEdit, 
 }
 
 export default function ExpenseList({
-  trip,
   expenses,
   canEdit,
   editingExpenseId,
@@ -164,17 +136,11 @@ export default function ExpenseList({
   return (
     <div>
       {groupByDate(expenses).map(([date, dayExpenses]) => {
-        const subtotal = computeDaySubtotal(dayExpenses, trip);
         const ids = dayExpenses.map((e) => e.id ?? "");
         return (
           <div key={date} className="expense-day-group">
             <div className="expense-day-header">
               <h3>{formatDateHeader(date)}</h3>
-              {subtotal != null && (
-                <span className="muted">
-                  小計 {subtotal.toFixed(2)} {trip.baseCurrency}
-                </span>
-              )}
             </div>
 
             <DndContext

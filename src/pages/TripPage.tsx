@@ -232,7 +232,6 @@ export default function TripPage() {
       {activeTab === "expenses" && (
         <div>
           <ExpenseList
-            trip={trip}
             expenses={expenses}
             canEdit={unlocked}
             editingExpenseId={showForm ? editingExpense?.id : undefined}
