@@ -9,6 +9,7 @@ import {
   query,
   setDoc,
   updateDoc,
+  writeBatch,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { generateTripCode } from "./tripCode";
@@ -55,7 +56,10 @@ export async function listExpenses(code: string): Promise<Expense[]> {
 }
 
 export async function addExpense(code: string, expense: Omit<Expense, "id">): Promise<string> {
-  const ref = await addDoc(collection(db, "trips", code, "expenses"), expense);
+  const ref = await addDoc(collection(db, "trips", code, "expenses"), {
+    ...expense,
+    order: expense.order ?? Date.now(),
+  });
   return ref.id;
 }
 
@@ -69,4 +73,12 @@ export async function updateExpense(
 
 export async function deleteExpense(code: string, expenseId: string): Promise<void> {
   await deleteDoc(doc(db, "trips", code, "expenses", expenseId));
+}
+
+export async function reorderExpenses(code: string, updates: { id: string; order: number }[]): Promise<void> {
+  const batch = writeBatch(db);
+  for (const { id, order } of updates) {
+    batch.update(doc(db, "trips", code, "expenses", id), { order });
+  }
+  await batch.commit();
 }

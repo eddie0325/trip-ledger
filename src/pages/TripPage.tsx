@@ -9,6 +9,7 @@ import {
   deleteExpense,
   getTrip,
   listExpenses,
+  reorderExpenses,
   updateExchangeRate,
   updateExpense,
 } from "../lib/tripService";
@@ -89,6 +90,12 @@ export default function TripPage() {
     if (!expense.id) return;
     if (!window.confirm(`確定要刪除「${expense.description}」這筆花費嗎？`)) return;
     await deleteExpense(code, expense.id);
+    await loadData();
+  }
+
+  async function handleReorder(orderedIds: string[]) {
+    const updates = orderedIds.map((id, index) => ({ id, order: index * 1000 }));
+    await reorderExpenses(code, updates);
     await loadData();
   }
 
@@ -233,6 +240,7 @@ export default function TripPage() {
               setShowForm(true);
             }}
             onDelete={handleDelete}
+            onReorder={(_date, orderedIds) => handleReorder(orderedIds)}
           />
 
           {unlocked && !showForm && (

@@ -206,12 +206,35 @@ textarea {
   font-weight: 700;
 }
 
+.expense-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.drag-handle {
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  padding: 4px 6px;
+  color: var(--text);
+  cursor: grab;
+  touch-action: none;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
 .expense-summary {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   gap: 8px;
   width: 100%;
+  min-width: 0;
   padding: 4px 0;
   background: none;
   border: none;

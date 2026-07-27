@@ -16,6 +16,8 @@ export interface Expense {
   splits: ExpenseSplit[];
   receiptUrl?: string;
   mapUrl?: string;
+  /** Manual sort position among expenses sharing the same date; higher sorts later. */
+  order?: number;
 }
 
 export interface Trip {
