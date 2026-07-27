@@ -86,6 +86,7 @@ function ExpenseRow({ expense, canEdit, isExpanded, onToggle, onEdit, onDelete }
             分攤：
             {expense.splits.map((s) => `${s.member} ${s.amount.toFixed(2)}`).join("、")}
           </div>
+          {expense.note && <div className="expense-meta">備註：{expense.note}</div>}
           {(expense.mapUrl || expense.receiptUrl) && (
             <div className="expense-meta">
               {expense.mapUrl && (
@@ -96,7 +97,7 @@ function ExpenseRow({ expense, canEdit, isExpanded, onToggle, onEdit, onDelete }
               {expense.mapUrl && expense.receiptUrl && " · "}
               {expense.receiptUrl && (
                 <a href={expense.receiptUrl} target="_blank" rel="noreferrer">
-                  收據
+                  附圖
                 </a>
               )}
             </div>

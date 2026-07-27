@@ -7,6 +7,9 @@ function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+const TITLE_MAX_LENGTH = 50;
+const NOTE_MAX_LENGTH = 200;
+
 /** Keeps manually-entered (touched) amounts as-is and splits whatever remains of the total evenly across everyone else. */
 function recomputeCustomAmounts(
   amountTotal: number,
@@ -42,6 +45,7 @@ export default function ExpenseForm({ trip, initialValue, onSubmit, onCancel }: 
   const [currency, setCurrency] = useState(initialValue?.currency ?? trip.baseCurrency);
   const [date, setDate] = useState(initialValue?.date ?? todayIso());
   const [description, setDescription] = useState(initialValue?.description ?? "");
+  const [note, setNote] = useState(initialValue?.note ?? "");
   const [splitType, setSplitType] = useState<SplitType>(initialValue?.splitType ?? "equal");
   const [participants, setParticipants] = useState<Set<string>>(
     new Set(initialValue?.splits.map((s) => s.member) ?? trip.members),
@@ -114,7 +118,7 @@ export default function ExpenseForm({ trip, initialValue, onSubmit, onCancel }: 
 
     const amountNum = Number(amount);
     if (!amount || !(amountNum > 0)) return setError("請輸入有效的金額");
-    if (!description.trim()) return setError("請輸入項目說明");
+    if (!description.trim()) return setError("請輸入標題");
 
     let splits;
     if (splitType === "equal") {
@@ -150,6 +154,7 @@ export default function ExpenseForm({ trip, initialValue, onSubmit, onCancel }: 
         currency,
         date,
         description: description.trim(),
+        note: note.trim(),
         splitType,
         splits,
         ...(finalReceiptUrl ? { receiptUrl: finalReceiptUrl } : {}),
@@ -204,22 +209,35 @@ export default function ExpenseForm({ trip, initialValue, onSubmit, onCancel }: 
       </div>
 
       <div className="field">
-        <label htmlFor="expense-description">項目說明</label>
+        <label htmlFor="expense-description">標題</label>
         <input
           id="expense-description"
           type="text"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="例如：晚餐"
+          maxLength={TITLE_MAX_LENGTH}
         />
       </div>
 
       <div className="field">
-        <label htmlFor="expense-receipt">收據照片（選填）</label>
+        <label htmlFor="expense-note">備註（選填）</label>
+        <textarea
+          id="expense-note"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="例如：這張附圖是這筆加上另一筆手續費的加總"
+          maxLength={NOTE_MAX_LENGTH}
+          rows={2}
+        />
+      </div>
+
+      <div className="field">
+        <label htmlFor="expense-receipt">附圖（選填）</label>
         {receiptPreview && (
           <div className="receipt-preview">
             <a href={receiptPreview} target="_blank" rel="noreferrer">
-              <img src={receiptPreview} alt="收據預覽" />
+              <img src={receiptPreview} alt="附圖預覽" />
             </a>
             <button type="button" className="btn" onClick={handleRemoveReceipt}>
               移除
@@ -292,7 +310,7 @@ export default function ExpenseForm({ trip, initialValue, onSubmit, onCancel }: 
 
       <div className="field-row">
         <button type="submit" className="btn btn-primary" disabled={submitting}>
-          {uploading ? "上傳收據中..." : submitting ? "儲存中..." : initialValue ? "儲存修改" : "新增花費"}
+          {uploading ? "上傳附圖中..." : submitting ? "儲存中..." : initialValue ? "儲存修改" : "新增花費"}
         </button>
         {onCancel && (
           <button type="button" className="btn" onClick={onCancel}>
