@@ -9,9 +9,11 @@ interface ExpenseListProps {
   trip: Trip;
   expenses: Expense[];
   canEdit: boolean;
+  editingExpenseId?: string;
   onEdit: (expense: Expense) => void;
   onDelete: (expense: Expense) => void;
   onReorder: (date: string, orderedIds: string[]) => void;
+  renderEditForm: (expense: Expense) => React.ReactNode;
 }
 
 function groupByDate(expenses: Expense[]): [string, Expense[]][] {
@@ -44,12 +46,13 @@ interface ExpenseRowProps {
   expense: Expense;
   canEdit: boolean;
   isExpanded: boolean;
+  editForm: React.ReactNode;
   onToggle: () => void;
   onEdit: (expense: Expense) => void;
   onDelete: (expense: Expense) => void;
 }
 
-function ExpenseRow({ expense, canEdit, isExpanded, onToggle, onEdit, onDelete }: ExpenseRowProps) {
+function ExpenseRow({ expense, canEdit, isExpanded, editForm, onToggle, onEdit, onDelete }: ExpenseRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: expense.id ?? "",
   });
@@ -80,45 +83,58 @@ function ExpenseRow({ expense, canEdit, isExpanded, onToggle, onEdit, onDelete }
         </button>
       </div>
 
-      {isExpanded && (
-        <div className="expense-details">
-          <div className="expense-meta">
-            分攤：
-            {expense.splits.map((s) => `${s.member} ${s.amount.toFixed(2)}`).join("、")}
-          </div>
-          {expense.note && <div className="expense-meta">備註：{expense.note}</div>}
-          {(expense.mapUrl || expense.receiptUrl) && (
+      {editForm ? (
+        <div className="expense-details">{editForm}</div>
+      ) : (
+        isExpanded && (
+          <div className="expense-details">
             <div className="expense-meta">
-              {expense.mapUrl && (
-                <a href={expense.mapUrl} target="_blank" rel="noreferrer">
-                  地圖
-                </a>
-              )}
-              {expense.mapUrl && expense.receiptUrl && " · "}
-              {expense.receiptUrl && (
-                <a href={expense.receiptUrl} target="_blank" rel="noreferrer">
-                  附圖
-                </a>
-              )}
+              分攤：
+              {expense.splits.map((s) => `${s.member} ${s.amount.toFixed(2)}`).join("、")}
             </div>
-          )}
-          {canEdit && (
-            <div className="expense-actions">
-              <button type="button" className="btn" onClick={() => onEdit(expense)}>
-                編輯
-              </button>
-              <button type="button" className="btn btn-danger" onClick={() => onDelete(expense)}>
-                刪除
-              </button>
-            </div>
-          )}
-        </div>
+            {expense.note && <div className="expense-meta">備註：{expense.note}</div>}
+            {(expense.mapUrl || expense.receiptUrl) && (
+              <div className="expense-meta">
+                {expense.mapUrl && (
+                  <a href={expense.mapUrl} target="_blank" rel="noreferrer">
+                    地圖
+                  </a>
+                )}
+                {expense.mapUrl && expense.receiptUrl && " · "}
+                {expense.receiptUrl && (
+                  <a href={expense.receiptUrl} target="_blank" rel="noreferrer">
+                    附圖
+                  </a>
+                )}
+              </div>
+            )}
+            {canEdit && (
+              <div className="expense-actions">
+                <button type="button" className="btn" onClick={() => onEdit(expense)}>
+                  編輯
+                </button>
+                <button type="button" className="btn btn-danger" onClick={() => onDelete(expense)}>
+                  刪除
+                </button>
+              </div>
+            )}
+          </div>
+        )
       )}
     </div>
   );
 }
 
-export default function ExpenseList({ trip, expenses, canEdit, onEdit, onDelete, onReorder }: ExpenseListProps) {
+export default function ExpenseList({
+  trip,
+  expenses,
+  canEdit,
+  editingExpenseId,
+  onEdit,
+  onDelete,
+  onReorder,
+  renderEditForm,
+}: ExpenseListProps) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
@@ -173,6 +189,7 @@ export default function ExpenseList({ trip, expenses, canEdit, onEdit, onDelete,
                     expense={expense}
                     canEdit={canEdit}
                     isExpanded={!!expense.id && expandedIds.has(expense.id)}
+                    editForm={expense.id && expense.id === editingExpenseId ? renderEditForm(expense) : null}
                     onToggle={() => toggleExpanded(expense.id)}
                     onEdit={onEdit}
                     onDelete={onDelete}

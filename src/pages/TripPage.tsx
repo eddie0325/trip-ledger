@@ -235,12 +235,24 @@ export default function TripPage() {
             trip={trip}
             expenses={expenses}
             canEdit={unlocked}
+            editingExpenseId={showForm ? editingExpense?.id : undefined}
             onEdit={(expense) => {
               setEditingExpense(expense);
               setShowForm(true);
             }}
             onDelete={handleDelete}
             onReorder={(_date, orderedIds) => handleReorder(orderedIds)}
+            renderEditForm={(expense) => (
+              <ExpenseForm
+                trip={trip}
+                initialValue={expense}
+                onSubmit={handleFormSubmit}
+                onCancel={() => {
+                  setShowForm(false);
+                  setEditingExpense(null);
+                }}
+              />
+            )}
           />
 
           {unlocked && !showForm && (
@@ -257,11 +269,10 @@ export default function TripPage() {
             </button>
           )}
 
-          {unlocked && showForm && (
+          {unlocked && showForm && !editingExpense && (
             <div className="card" style={{ marginTop: 12 }}>
               <ExpenseForm
                 trip={trip}
-                initialValue={editingExpense ?? undefined}
                 onSubmit={handleFormSubmit}
                 onCancel={() => {
                   setShowForm(false);
