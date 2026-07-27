@@ -7,6 +7,28 @@ function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+/** Keeps manually-entered (touched) amounts as-is and splits whatever remains of the total evenly across everyone else. */
+function recomputeCustomAmounts(
+  amountTotal: number,
+  members: string[],
+  touched: Set<string>,
+  current: Record<string, string>,
+): Record<string, string> {
+  const untouched = members.filter((m) => !touched.has(m));
+  if (untouched.length === 0) return current;
+
+  const touchedSum = members
+    .filter((m) => touched.has(m))
+    .reduce((sum, m) => sum + (Number(current[m]) || 0), 0);
+  const remaining = Math.max(0, amountTotal - touchedSum);
+
+  const next = { ...current };
+  for (const split of computeEqualSplits(remaining, untouched)) {
+    next[split.member] = String(split.amount);
+  }
+  return next;
+}
+
 interface ExpenseFormProps {
   trip: Trip;
   initialValue?: Expense;
@@ -29,6 +51,9 @@ export default function ExpenseForm({ trip, initialValue, onSubmit, onCancel }: 
     for (const split of initialValue?.splits ?? []) initial[split.member] = String(split.amount);
     return initial;
   });
+  const [touchedCustomMembers, setTouchedCustomMembers] = useState<Set<string>>(
+    () => new Set(initialValue?.splitType === "custom" ? initialValue.splits.map((s) => s.member) : []),
+  );
   const [receiptUrl, setReceiptUrl] = useState(initialValue?.receiptUrl);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string | undefined>(initialValue?.receiptUrl);
@@ -38,14 +63,20 @@ export default function ExpenseForm({ trip, initialValue, onSubmit, onCancel }: 
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (splitType === "custom" && Object.keys(customAmounts).length === 0 && Number(amount) > 0) {
-      const splits = computeEqualSplits(Number(amount), Array.from(participants));
-      const next: Record<string, string> = {};
-      for (const s of splits) next[s.member] = String(s.amount);
-      setCustomAmounts(next);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [splitType]);
+    if (splitType !== "custom") return;
+    const amountNum = Number(amount) || 0;
+    setCustomAmounts((prev) => recomputeCustomAmounts(amountNum, trip.members, touchedCustomMembers, prev));
+  }, [amount, splitType, touchedCustomMembers, trip.members]);
+
+  function handleCustomAmountChange(member: string, value: string) {
+    setTouchedCustomMembers((prev) => {
+      const next = new Set(prev);
+      if (value.trim() === "") next.delete(member);
+      else next.add(member);
+      return next;
+    });
+    setCustomAmounts((prev) => ({ ...prev, [member]: value }));
+  }
 
   function handleReceiptChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -213,7 +244,10 @@ export default function ExpenseForm({ trip, initialValue, onSubmit, onCancel }: 
             type="button"
             className="btn"
             style={splitType === "custom" ? { borderColor: "var(--accent)", color: "var(--accent)" } : undefined}
-            onClick={() => setSplitType("custom")}
+            onClick={() => {
+              setSplitType("custom");
+              setTouchedCustomMembers(new Set());
+            }}
           >
             自訂金額
           </button>
@@ -246,7 +280,7 @@ export default function ExpenseForm({ trip, initialValue, onSubmit, onCancel }: 
                 step="0.01"
                 min="0"
                 value={customAmounts[m] ?? ""}
-                onChange={(e) => setCustomAmounts((prev) => ({ ...prev, [m]: e.target.value }))}
+                onChange={(e) => handleCustomAmountChange(m, e.target.value)}
                 placeholder="0"
               />
             </div>
