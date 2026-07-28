@@ -87,3 +87,34 @@ export function simplifyDebts(balances: Record<string, number>): Transaction[] {
 
   return transactions;
 }
+
+/**
+ * Like simplifyDebts, but a debtor can be pinned to pay a specific creditor first (e.g. it's easier
+ * for them to hand cash to that particular person). Each preference is honored up to whatever amount
+ * both sides still owe/are owed; anything left over is resolved by the normal greedy matching so every
+ * balance still nets to zero.
+ */
+export function simplifyDebtsWithPreferences(
+  balances: Record<string, number>,
+  preferences: Record<string, string>,
+): Transaction[] {
+  const remaining = { ...balances };
+  const transactions: Transaction[] = [];
+
+  for (const [debtor, creditor] of Object.entries(preferences)) {
+    if (debtor === creditor) continue;
+    const debtorBalance = remaining[debtor] ?? 0;
+    const creditorBalance = remaining[creditor] ?? 0;
+    if (debtorBalance >= -EPSILON || creditorBalance <= EPSILON) continue;
+
+    const amount = Math.round(Math.min(-debtorBalance, creditorBalance) * 100) / 100;
+    if (amount <= EPSILON) continue;
+
+    transactions.push({ from: debtor, to: creditor, amount });
+    remaining[debtor] += amount;
+    remaining[creditor] -= amount;
+  }
+
+  transactions.push(...simplifyDebts(remaining));
+  return transactions;
+}
