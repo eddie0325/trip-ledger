@@ -58,6 +58,7 @@ export default function ExpenseForm({ trip, initialValue, onSubmit, onCancel }: 
   const [touchedCustomMembers, setTouchedCustomMembers] = useState<Set<string>>(
     () => new Set(initialValue?.splitType === "custom" ? initialValue.splits.map((s) => s.member) : []),
   );
+  const [focusedCustomMember, setFocusedCustomMember] = useState<string | null>(null);
   const [receiptUrl, setReceiptUrl] = useState(initialValue?.receiptUrl);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string | undefined>(initialValue?.receiptUrl);
@@ -69,8 +70,15 @@ export default function ExpenseForm({ trip, initialValue, onSubmit, onCancel }: 
   useEffect(() => {
     if (splitType !== "custom") return;
     const amountNum = Number(amount) || 0;
-    setCustomAmounts((prev) => recomputeCustomAmounts(amountNum, trip.members, touchedCustomMembers, prev));
-  }, [amount, splitType, touchedCustomMembers, trip.members]);
+    // The focused field is excluded from recompute even mid-edit (e.g. briefly empty while
+    // backspacing to type a new value), so it never gets overwritten out from under the user.
+    const frozen = focusedCustomMember ? new Set(touchedCustomMembers).add(focusedCustomMember) : touchedCustomMembers;
+    setCustomAmounts((prev) => recomputeCustomAmounts(amountNum, trip.members, frozen, prev));
+  }, [amount, splitType, touchedCustomMembers, focusedCustomMember, trip.members]);
+
+  function handleCustomAmountFocus(member: string) {
+    setFocusedCustomMember(member);
+  }
 
   function handleCustomAmountChange(member: string, value: string) {
     setTouchedCustomMembers((prev) => {
@@ -80,6 +88,10 @@ export default function ExpenseForm({ trip, initialValue, onSubmit, onCancel }: 
       return next;
     });
     setCustomAmounts((prev) => ({ ...prev, [member]: value }));
+  }
+
+  function handleCustomAmountBlur(member: string) {
+    setFocusedCustomMember((prev) => (prev === member ? null : prev));
   }
 
   function handleReceiptChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -298,7 +310,9 @@ export default function ExpenseForm({ trip, initialValue, onSubmit, onCancel }: 
                 step="0.01"
                 min="0"
                 value={customAmounts[m] ?? ""}
+                onFocus={() => handleCustomAmountFocus(m)}
                 onChange={(e) => handleCustomAmountChange(m, e.target.value)}
+                onBlur={() => handleCustomAmountBlur(m)}
                 placeholder="0"
               />
             </div>
