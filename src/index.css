@@ -290,6 +290,26 @@ textarea {
   font-size: 15px;
 }
 
+.balance-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.balance-table td {
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.balance-table tr:last-child td {
+  border-bottom: none;
+}
+
+.balance-table td:last-child {
+  text-align: right;
+  font-weight: 500;
+}
+
 .balance-positive {
   color: var(--success);
 }

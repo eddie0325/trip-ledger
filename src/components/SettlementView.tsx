@@ -20,8 +20,36 @@ interface CommonBlockProps {
   displayCurrency: string;
 }
 
-function BalanceRows({ trip, expenses, displayCurrency }: CommonBlockProps) {
+interface BalanceRowsProps extends CommonBlockProps {
+  bordered?: boolean;
+}
+
+function BalanceRows({ trip, expenses, displayCurrency, bordered }: BalanceRowsProps) {
   const balances = computeBalances(trip, expenses);
+
+  if (bordered) {
+    return (
+      <table className="balance-table">
+        <tbody>
+          {trip.members.map((member) => {
+            const amount = convertFromBase(balances[member] ?? 0, displayCurrency, trip);
+            const isPositive = amount > 0.01;
+            const isNegative = amount < -0.01;
+            return (
+              <tr key={member}>
+                <td>{member}</td>
+                <td className={isPositive ? "balance-positive" : isNegative ? "balance-negative" : ""}>
+                  {isPositive ? "應收 " : isNegative ? "應付 " : ""}
+                  {Math.abs(amount).toFixed(2)}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    );
+  }
+
   return (
     <>
       {trip.members.map((member) => {
@@ -179,7 +207,7 @@ export default function SettlementView({ trip, expenses }: SettlementViewProps) 
           )}
         </div>
 
-        <BalanceRows trip={trip} expenses={expenses} displayCurrency={displayCurrency} />
+        <BalanceRows trip={trip} expenses={expenses} displayCurrency={displayCurrency} bordered />
       </div>
 
       <div className="card">
