@@ -283,11 +283,7 @@ export default function TripPage() {
         </div>
       )}
 
-      {activeTab === "settlement" && (
-        <div className="card">
-          <SettlementView trip={trip} expenses={expenses} />
-        </div>
-      )}
+      {activeTab === "settlement" && <SettlementView trip={trip} expenses={expenses} />}
     </div>
   );
 }

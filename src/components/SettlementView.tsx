@@ -14,16 +14,14 @@ interface SettlementViewProps {
   expenses: Expense[];
 }
 
-interface SettlementBlockProps {
+interface CommonBlockProps {
   trip: Trip;
   expenses: Expense[];
   displayCurrency: string;
 }
 
-function SettlementBlock({ trip, expenses, displayCurrency }: SettlementBlockProps) {
+function BalanceRows({ trip, expenses, displayCurrency }: CommonBlockProps) {
   const balances = computeBalances(trip, expenses);
-  const transactions = simplifyDebts(balances);
-
   return (
     <>
       {trip.members.map((member) => {
@@ -40,6 +38,18 @@ function SettlementBlock({ trip, expenses, displayCurrency }: SettlementBlockPro
           </div>
         );
       })}
+    </>
+  );
+}
+
+/** Read-only balances + transactions for a single day; not editable since it exists for cross-checking. */
+function SettlementBlock({ trip, expenses, displayCurrency }: CommonBlockProps) {
+  const balances = computeBalances(trip, expenses);
+  const transactions = simplifyDebts(balances);
+
+  return (
+    <>
+      <BalanceRows trip={trip} expenses={expenses} displayCurrency={displayCurrency} />
 
       {transactions.length === 0 ? (
         <p className="muted">不需要轉帳。</p>
@@ -59,13 +69,8 @@ function SettlementBlock({ trip, expenses, displayCurrency }: SettlementBlockPro
   );
 }
 
-interface OverallSettlementProps {
-  trip: Trip;
-  expenses: Expense[];
-  displayCurrency: string;
-}
-
-function OverallSettlement({ trip, expenses, displayCurrency }: OverallSettlementProps) {
+/** Editable transactions for the overall settlement: each debtor can be redirected to a different creditor. */
+function TransactionsEditor({ trip, expenses, displayCurrency }: CommonBlockProps) {
   const [preferences, setPreferences] = useState<Record<string, string>>({});
   const balances = computeBalances(trip, expenses);
   const transactions = simplifyDebtsWithPreferences(balances, preferences);
@@ -73,22 +78,7 @@ function OverallSettlement({ trip, expenses, displayCurrency }: OverallSettlemen
 
   return (
     <>
-      {trip.members.map((member) => {
-        const amount = convertFromBase(balances[member] ?? 0, displayCurrency, trip);
-        const isPositive = amount > 0.01;
-        const isNegative = amount < -0.01;
-        return (
-          <div className="balance-row" key={member}>
-            <span>{member}</span>
-            <span className={isPositive ? "balance-positive" : isNegative ? "balance-negative" : ""}>
-              {isPositive ? "應收 " : isNegative ? "應付 " : ""}
-              {Math.abs(amount).toFixed(2)}
-            </span>
-          </div>
-        );
-      })}
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: 16 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
         <h3 style={{ margin: 0 }}>結算方式</h3>
         {Object.keys(preferences).length > 0 && (
           <button type="button" className="btn" onClick={() => setPreferences({})}>
@@ -146,41 +136,47 @@ export default function SettlementView({ trip, expenses }: SettlementViewProps) 
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h3 style={{ margin: 0 }}>總結算（{displayCurrency}）</h3>
-        {canToggleCurrency && (
-          <div className="field-row" style={{ flex: "0 0 auto" }}>
-            <button
-              type="button"
-              className="btn"
-              style={
-                displayCurrency === trip.baseCurrency
-                  ? { borderColor: "var(--accent)", color: "var(--accent)" }
-                  : undefined
-              }
-              onClick={() => setDisplayCurrency(trip.baseCurrency)}
-            >
-              {trip.baseCurrency}
-            </button>
-            <button
-              type="button"
-              className="btn"
-              style={
-                displayCurrency === trip.foreignCurrency
-                  ? { borderColor: "var(--accent)", color: "var(--accent)" }
-                  : undefined
-              }
-              onClick={() => setDisplayCurrency(trip.foreignCurrency)}
-            >
-              {trip.foreignCurrency}
-            </button>
-          </div>
-        )}
+      <div className="card">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h3 style={{ margin: 0 }}>總結算（{displayCurrency}）</h3>
+          {canToggleCurrency && (
+            <div className="field-row" style={{ flex: "0 0 auto" }}>
+              <button
+                type="button"
+                className="btn"
+                style={
+                  displayCurrency === trip.baseCurrency
+                    ? { borderColor: "var(--accent)", color: "var(--accent)" }
+                    : undefined
+                }
+                onClick={() => setDisplayCurrency(trip.baseCurrency)}
+              >
+                {trip.baseCurrency}
+              </button>
+              <button
+                type="button"
+                className="btn"
+                style={
+                  displayCurrency === trip.foreignCurrency
+                    ? { borderColor: "var(--accent)", color: "var(--accent)" }
+                    : undefined
+                }
+                onClick={() => setDisplayCurrency(trip.foreignCurrency)}
+              >
+                {trip.foreignCurrency}
+              </button>
+            </div>
+          )}
+        </div>
+
+        <BalanceRows trip={trip} expenses={expenses} displayCurrency={displayCurrency} />
       </div>
 
-      <OverallSettlement trip={trip} expenses={expenses} displayCurrency={displayCurrency} />
+      <div className="card">
+        <TransactionsEditor trip={trip} expenses={expenses} displayCurrency={displayCurrency} />
+      </div>
 
-      <h3 style={{ marginTop: 24 }}>每日結算</h3>
+      <h3>每日結算</h3>
       {groupByDate(expenses).map(([date, dayExpenses]) => (
         <div key={date} className="expense-day-group">
           <div className="expense-day-header">
