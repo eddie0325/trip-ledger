@@ -75,26 +75,36 @@ function TransactionsEditor({ trip, expenses, displayCurrency }: CommonBlockProp
   const balances = computeBalances(trip, expenses);
   const transactions = simplifyDebtsWithPreferences(balances, preferences);
   const creditors = trip.members.filter((m) => (balances[m] ?? 0) > 0.01);
+  const hasPreferences = Object.keys(preferences).length > 0;
+
+  // Stable order (by debtor's position in the member list) so changing one person's target
+  // doesn't reshuffle unrelated rows above it.
+  const sortedTransactions = [...transactions].sort(
+    (a, b) => trip.members.indexOf(a.from) - trip.members.indexOf(b.from),
+  );
 
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
         <h3 style={{ margin: 0 }}>結算方式</h3>
-        {Object.keys(preferences).length > 0 && (
-          <button type="button" className="btn" onClick={() => setPreferences({})}>
-            重設為自動分配
-          </button>
-        )}
+        <button
+          type="button"
+          className="btn"
+          style={{ visibility: hasPreferences ? "visible" : "hidden" }}
+          onClick={() => setPreferences({})}
+        >
+          重設為自動分配
+        </button>
       </div>
       <p className="muted" style={{ marginTop: 4 }}>
         每筆轉帳可以改成付給別人（例如現實中只方便直接給某人），其餘的人會自動重新分配。
       </p>
 
-      {transactions.length === 0 ? (
+      {sortedTransactions.length === 0 ? (
         <p className="muted">不需要轉帳。</p>
       ) : (
-        transactions.map((t, i) => (
-          <div className="transaction-row" key={i}>
+        sortedTransactions.map((t) => (
+          <div className="transaction-row" key={`${t.from}->${t.to}`}>
             <span>
               {t.from} →{" "}
               <select
